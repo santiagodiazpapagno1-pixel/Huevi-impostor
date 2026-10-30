@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Counter Huevike</title>
+<meta name="description" content="Shooter por equipos: llevá el huevo podrido a la base enemiga.">
+<meta name="theme-color" content="#14110d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Counter Huevike">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
+<script src="vendor/peerjs.min.js" defer></script>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<!-- ============ PANTALLA DE CARGA ============ -->
+<section id="loading" class="screen active">
+  <div class="logo"><span class="l1">COUNTER</span><span class="l2">HUEVIKE</span></div>
+  <div class="bar"><i id="loadBar"></i></div>
+  <p id="loadText">Cargando…</p>
+</section>
+
+<!-- ============ MENÚ PRINCIPAL ============ -->
+<section id="menu" class="screen">
+  <div class="menu-wrap">
+    <div class="logo small"><span class="l1">COUNTER</span><span class="l2">HUEVIKE</span></div>
+    <label class="name-field">Tu nombre<input id="playerName" maxlength="14" autocomplete="off" spellcheck="false"></label>
+    <div class="menu-buttons">
+      <button class="big" data-go="solo">Jugar solo</button>
+      <button class="big" data-go="coop">Jugar con amigos contra la IA</button>
+      <button class="big" data-go="privada">Sala privada de amigos</button>
+      <button class="big ghost" data-go="settings">Ajustes</button>
+    </div>
+    <div class="menu-foot">
+      <button class="link" data-go="howto">Cómo jugar</button>
+      <button class="link" id="installBtn" hidden>📲 Instalar app</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PREPARAR PARTIDA SOLO ============ -->
+<section id="setup" class="screen">
+  <div class="panel wide">
+    <header><button class="back" data-go="menu">‹</button><h2>Solo contra la IA</h2></header>
+    <h3>Mapa</h3>
+    <div class="maps" id="soloMaps"></div>
+    <h3>Tamaño de la partida</h3>
+    <div class="stepper" id="soloSize"></div>
+    <button class="big primary" id="soloStart">Jugar</button>
+  </div>
+</section>
+
+<!-- ============ ONLINE: CREAR O UNIRSE ============ -->
+<section id="online" class="screen">
+  <div class="panel">
+    <header><button class="back" data-go="menu">‹</button><h2 id="onlineTitle">Online</h2></header>
+    <p class="hint" id="onlineHint"></p>
+    <button class="big primary" id="createRoom">Crear sala</button>
+    <div class="or">o unite con un código</div>
+    <div class="join-row"><input id="joinCode" maxlength="5" placeholder="CÓDIGO" autocomplete="off" spellcheck="false"><button class="big" id="joinRoom">Unirse</button></div>
+    <p class="error" id="onlineError"></p>
+  </div>
+</section>
+
+<!-- ============ SALA DE ESPERA ============ -->
+<section id="lobby" class="screen">
+  <div class="panel wide">
+    <header><button class="back" id="leaveLobby">‹</button><h2 id="lobbyMode">Sala</h2></header>
+    <div class="code-box">
+      <div><small>Código de sala</small><b id="lobbyCode">-----</b></div>
+      <button id="copyCode">Copiar</button>
+      <button id="shareCode">Compartir</button>
+    </div>
+    <div class="lobby-grid">
+      <div>
+        <h3>Mapa</h3>
+        <div class="maps compact" id="lobbyMaps"></div>
+        <h3>Jugadores por equipo</h3>
+        <div class="stepper" id="lobbySize"></div>
+        <p class="hint" id="lobbyInfo"></p>
+      </div>
+      <div>
+        <h3>Equipos <span id="lobbyCount"></span></h3>
+        <div class="teams"><ul id="teamA"></ul><ul id="teamB"></ul></div>
+        <button class="small" id="shuffleTeams" hidden>Mezclar equipos</button>
+      </div>
+    </div>
+    <p class="status" id="lobbyStatus"></p>
+    <button class="big primary" id="startMatch" hidden>INICIAR PARTIDA</button>
+  </div>
+</section>
+
+<!-- ============ AJUSTES ============ -->
+<section id="settings" class="screen">
+  <div class="panel">
+    <header><button class="back" id="settingsBack">‹</button><h2>Ajustes</h2></header>
+    <div class="settings">
+      <label>Volumen general<input type="range" min="0" max="1" step="0.05" data-set="master"></label>
+      <label>Volumen de efectos<input type="range" min="0" max="1" step="0.05" data-set="sfx"></label>
+      <label>Volumen de música<input type="range" min="0" max="1" step="0.05" data-set="music"></label>
+      <label class="check">Música activada<input type="checkbox" data-set="musicOn"></label>
+      <label>Sensibilidad de cámara<input type="range" min="0.3" max="3" step="0.05" data-set="sensitivity"></label>
+      <label>Calidad gráfica
+        <select data-set="quality"><option value="auto">Automática</option><option value="bajo">Baja</option><option value="medio">Media</option><option value="alto">Alta</option></select></label>
+      <h3>Controles táctiles</h3>
+      <label>Tamaño de botones<input type="range" min="0.7" max="1.4" step="0.05" data-set="btnScale"></label>
+      <label>Opacidad de botones<input type="range" min="0.3" max="1" step="0.05" data-set="btnOpacity"></label>
+      <label class="check">Modo zurdo (joystick a la derecha)<input type="checkbox" data-set="leftHanded"></label>
+      <p class="hint">PC: WASD moverse · Mouse apuntar · Click disparar · Click derecho mantener para apuntar · Espacio saltar · Q/rueda cambiar arma · R recargar · E huevo (mantener para desactivar) · F agarrar arma · Tab tabla · Esc pausa. También funciona con joystick/gamepad.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CÓMO JUGAR ============ -->
+<section id="howto" class="screen">
+  <div class="panel">
+    <header><button class="back" data-go="menu">‹</button><h2>Cómo jugar</h2></header>
+    <div class="howto">
+      <p><b class="red">Rojo ataca</b>, <b class="blue">azul defiende</b>. Los roles se invierten en cada ronda.</p>
+      <p>🥚 El <b>huevo podrido</b> aparece en el centro. Agarralo con el botón de acción: va en la mochila y podés seguir disparando.</p>
+      <p>Si sos atacante, llevalo al <b>centro de la base enemiga</b> e instalalo. Arranca una cuenta de <b>60 segundos</b>: si llega a cero, explota y tu equipo gana la ronda.</p>
+      <p>Si defendés, acercate al huevo instalado y <b>mantené apretado DESACTIVAR 5 segundos</b>. Si lo soltás, te alejás o te eliminan, se cancela.</p>
+      <p>Cada ronda dura <b>5 minutos</b>. Si nadie resuelve el huevo, gana el equipo con más eliminaciones. Si lo instalan justo al final hay <b>tiempo extra</b> hasta que explote o lo desactiven.</p>
+      <p>Si quedan empatados después de 2 rondas, se juega una <b>ronda 3 decisiva</b> con una mitad de ataque para cada equipo, y si sigue el empate: <b>muerte súbita</b> (la primera eliminación gana).</p>
+      <p>Si te eliminan, <b>reaparecés a los 7 segundos</b> en tu base con tus armas y la munición que tenías. La vida se regenera despacio; los botiquines curan 50.</p>
+      <p>Empezás con una pistola. Hay armas tiradas por el mapa: podés llevar hasta <b>3</b>. La recarga es automática.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ INSTALAR (iPhone) ============ -->
+<section id="installIos" class="screen">
+  <div class="panel">
+    <header><button class="back" data-go="menu">‹</button><h2>Instalar en iPhone</h2></header>
+    <ol class="howto">
+      <li>Abrí esta página en <b>Safari</b>.</li>
+      <li>Tocá el botón <b>Compartir</b> (el cuadrado con la flecha hacia arriba).</li>
+      <li>Elegí <b>“Agregar a pantalla de inicio”</b> y confirmá.</li>
+      <li>Abrí Counter Huevike desde el ícono: se juega en pantalla completa y funciona sin internet en modo solo.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ HUD ============ -->
+<div id="hud" hidden>
+  <canvas id="minimap"></canvas>
+  <div id="topbar">
+    <div class="score"><span id="scoreMine">0</span><div class="clock"><small id="roundLabel">RONDA 1</small><b id="timer">5:00</b></div><span id="scoreTheirs">0</span></div>
+    <div id="roleTag"></div>
+    <div id="eggStatus"></div>
+  </div>
+  <div id="plantTimer" hidden><small>HUEVO PODRIDO INSTALADO</small><b>60</b></div>
+  <div id="feed"></div>
+  <div id="toasts"></div>
+  <div id="banner" hidden><b></b><small></small></div>
+  <div id="crosshair"><i></i><i></i><i></i><i></i><span id="hitmarker"></span></div>
+  <div id="defuseBar" hidden><small>DESACTIVANDO…</small><div><i></i></div></div>
+  <div id="health"><div class="hp-bar"><i id="hpFill"></i></div><b id="hpText">100</b><span id="eggIcon" hidden>🥚</span></div>
+  <div id="weaponBox"><div id="slots"></div><b id="weaponName">PISTOLA</b><div><span id="ammo">12</span><small id="reserve">/ ∞</small></div><div id="reloadBar" hidden><i></i></div></div>
+  <div id="damage"></div>
+  <div id="scope" hidden></div>
+  <div id="death" hidden><b>TE ELIMINARON</b><small id="deathBy"></small><div id="deathTimer">7</div></div>
+  <div id="board" hidden><table><thead><tr><th>Jugador</th><th>Elim.</th><th>Muertes</th></tr></thead><tbody id="boardBody"></tbody></table></div>
+  <div id="hudButtons"><button id="btnBoard" title="Tabla">☰</button><button id="btnPause" title="Pausa">❚❚</button></div>
+</div>
+
+<!-- ============ CONTROLES TÁCTILES ============ -->
+<div id="touch" hidden>
+  <div id="joy"><div id="joyKnob"></div></div>
+  <div id="rightPad">
+    <button data-btn="fire" id="btnFire" class="tb fire">🔥</button>
+    <button data-btn="jump" class="tb jump">⤒</button>
+    <button data-btn="aim" class="tb aim">◎</button>
+    <button data-btn="swap" class="tb swap">⇄</button>
+    <button data-btn="reload" class="tb reload">↻</button>
+  </div>
+  <div id="ctxPad">
+    <button data-btn="pick" class="tb ctx" id="ctxPick" hidden>AGARRAR<br>HUEVO</button>
+    <button data-btn="plant" class="tb ctx" id="ctxPlant" hidden>INSTALAR<br>HUEVO</button>
+    <button data-btn="defuse" class="tb ctx" id="ctxDefuse" hidden>MANTENER<br>DESACTIVAR</button>
+    <button data-btn="wpick" class="tb ctx" id="ctxWeapon" hidden>AGARRAR<br>ARMA</button>
+  </div>
+</div>
+
+<!-- ============ PAUSA ============ -->
+<section id="pause" class="overlay" hidden>
+  <div class="panel">
+    <h2>Pausa</h2>
+    <p class="hint" id="pauseHint"></p>
+    <button class="big primary" id="resume">Continuar</button>
+    <button class="big" id="pauseSettings">Ajustes</button>
+    <button class="big ghost" id="quit">Salir al menú</button>
+  </div>
+</section>
+
+<!-- ============ FINAL DE PARTIDA ============ -->
+<section id="end" class="overlay" hidden>
+  <div class="end-top">
+    <div id="endTitle">VICTORIA</div>
+    <div id="endScore">2 - 0</div>
+  </div>
+  <div id="freyreLine"><span class="who">HUEVERO FREYRE</span><p id="endMessage"></p></div>
+  <div class="end-panel">
+    <div class="end-buttons"><button class="big primary" id="endAgain">Jugar de nuevo</button><button class="big ghost" id="endMenu">Menú</button></div>
+    <div class="teams end-teams"><div><h4 id="endTeamA">Tu equipo</h4><table id="endA"></table></div><div><h4 id="endTeamB">Rivales</h4><table id="endB"></table></div></div>
+  </div>
+</section>
+
+<div id="modal" hidden><div class="panel"><p id="modalText"></p><button class="big" id="modalOk">OK</button></div></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
