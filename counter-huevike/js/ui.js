@@ -88,7 +88,8 @@ export class UI {
       ctx.fillStyle = role === 'atk' ? 'rgba(255,82,73,0.2)' : 'rgba(61,139,255,0.25)';
       ctx.beginPath(); ctx.arc(tx(b.x), tz(b.z), RULES.plantRadius * sx * 1.2, 0, 7); ctx.fill(); ctx.stroke();
       ctx.fillStyle = '#fff'; ctx.font = `bold ${8 * d}px sans-serif`; ctx.textAlign = 'center';
-      ctx.fillText(team === me.team ? 'TU BASE' : 'RIVAL', tx(b.x), tz(b.z) - RULES.plantRadius * sx * 1.4);
+      const lx = Math.max(22 * d, Math.min(W - 22 * d, tx(b.x)));
+      ctx.fillText(team === me.team ? 'TU BASE' : 'RIVAL', lx, Math.max(9 * d, tz(b.z) - RULES.plantRadius * sx * 1.4));
     }
     // Compañeros.
     for (const p of game.players) {
@@ -217,7 +218,7 @@ export class UI {
     const d = document.createElement('div');
     d.innerHTML = (killer ? `<span class="${kRole}">${esc(killer)}</span>` : '') + `<span class="w">${head ? '🎯 ' : ''}${esc(weapon)}</span><span class="${vRole}">${esc(victim)}</span>`;
     this.el.feed.appendChild(d);
-    while (this.el.feed.children.length > 5) this.el.feed.firstChild.remove();
+    while (this.el.feed.children.length > (document.body.classList.contains('touch') ? 3 : 5)) this.el.feed.firstChild.remove();
     setTimeout(() => d.remove(), 5000);
   }
 

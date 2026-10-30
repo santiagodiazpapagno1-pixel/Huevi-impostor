@@ -18,8 +18,7 @@ export class VictoryScene {
     this.scene.add(hemi, sun);
     this.scene.add(createHueveria());
     this.freyre = createFreyre();
-    this.freyre.rotation.y = Math.PI; // mirando a cámara (-z)
-    this.freyre.rotation.y = 0;
+    this.freyre.rotation.y = -0.25; // mirando a cámara (-z), un poco hacia el centro
     this.scene.add(this.freyre);
     this.eggs = [];
     this.confetti = null;
@@ -66,8 +65,10 @@ export class VictoryScene {
     const portrait = h > w;
     const intro = Math.min(1, this.t / 1.6), ease = 1 - Math.pow(1 - intro, 3);
     const dist = (portrait ? 7.5 : 5.2) + (1 - ease) * 3;
-    this.camera.position.set(Math.sin(this.t * 0.25) * 0.6 - 0.6, 1.5 + (1 - ease) * 1.5, -dist);
-    this.camera.lookAt(-0.6, portrait ? 1.6 : 1.25, 0);
+    // En horizontal corremos el encuadre para que Freyre quede a la izquierda (el texto va a la derecha).
+    const off = portrait ? -0.6 : -dist * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * this.camera.aspect * 0.5;
+    this.camera.position.set(Math.sin(this.t * 0.25) * 0.4 + off, 1.5 + (1 - ease) * 1.5, -dist);
+    this.camera.lookAt(off, portrait ? 1.6 : 1.25, 0);
     this.camera.updateProjectionMatrix();
     animateFreyre(this.freyre, this.t, this.win ? 'win' : 'lose');
     this.eggs.forEach((e, i) => {

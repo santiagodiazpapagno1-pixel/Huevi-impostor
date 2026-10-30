@@ -569,7 +569,7 @@ function flotante() {
   M.data.clouds = true;
   M.data.env = {
     sky: { turbidity: 2, rayleigh: 1.2, elevation: 24, azimuth: 120 },
-    fog: [0xbcd6ef, 0.007], hemi: [0xe0f0ff, 0x7a8fae, 1.0], sun: [0xffffff, 2.8], exposure: 0.9,
+    fog: [0xa9c8ea, 0.0042], hemi: [0xe0f0ff, 0x7a8fae, 0.9], sun: [0xffffff, 2.6], exposure: 0.78,
     particles: { color: 0xffffff, count: 120, size: 0.1, speed: 0.6, area: 60 },
   };
   return M.finish();

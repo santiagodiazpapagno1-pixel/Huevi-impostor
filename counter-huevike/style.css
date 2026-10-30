@@ -20,7 +20,7 @@ input, select { font: inherit; }
 [hidden] { display: none !important; }
 
 /* ---------- Pantallas ---------- */
-.screen, .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 20;
+.screen, .overlay { position: fixed; inset: 0; display: none; align-items: safe center; justify-content: safe center; z-index: 20;
   padding: calc(16px + var(--sat)) calc(16px + var(--sar)) calc(16px + var(--sab)) calc(16px + var(--sal)); overflow-y: auto; touch-action: pan-y; }
 .screen.active { display: flex; }
 .overlay:not([hidden]) { display: flex; }
@@ -235,8 +235,29 @@ body:not(.touch) #touch { pointer-events: none; }
   #weaponBox { min-width: 110px; }
 }
 @media (max-height: 480px) {
+  .logo.small .l1 { font-size: 24px; } .logo.small .l2 { font-size: 46px; }
+  .menu-wrap { gap: 10px; } .menu-buttons { gap: 7px; }
   .panel { padding: 12px; gap: 8px; }
   button.big { padding: 11px 14px; }
   #toasts { top: 18%; }
   #plantTimer { top: calc(92px + var(--sat)); } #plantTimer b { font-size: 40px; }
+}
+
+/* En celulares la lista de eliminaciones va debajo del minimapa para no tapar los botones. */
+body.touch #feed { top: calc(126px + var(--sat)); right: auto; left: calc(10px + var(--sal)); align-items: flex-start; font-size: 11px; }
+@media (max-width: 700px) { body.touch #feed { top: calc(100px + var(--sat)); } }
+
+/* Pantalla final en horizontal: Freyre a la izquierda, resultado y tabla a la derecha. */
+@media (orientation: landscape) {
+  #end:not([hidden]) { display: grid; grid-template-columns: 1fr minmax(320px, 50%); grid-template-rows: auto auto 1fr; align-items: start; gap: 8px;
+    background: linear-gradient(90deg, transparent 40%, rgba(0,0,0,0.65)); }
+  #end > * { grid-column: 2; }
+  #freyreLine { align-self: start; max-width: 100%; }
+  .end-panel { width: 100%; min-height: 0; max-height: 100%; overflow-y: auto; align-self: stretch; }
+}
+@media (max-height: 500px) {
+  #endTitle { font-size: 40px; } #endScore { font-size: 26px; line-height: 1; }
+  #freyreLine { padding: 8px 12px; } #freyreLine p { font-size: 17px; }
+  .end-panel { padding: 8px; gap: 6px; } .end-buttons button.big { padding: 9px 10px; font-size: 16px; }
+  .end-teams table { font-size: 12px; } .end-teams td { padding: 2px 4px; }
 }

@@ -12,6 +12,15 @@ export function randomCode() {
 
 function peerAvailable() { return typeof window.Peer === 'function'; }
 
+// Servidor de salas propio opcional: ?servidor=https://mi-servidor.com:443/ (por defecto, el público de PeerJS).
+function peerOpts() {
+  const s = new URLSearchParams(location.search).get('servidor');
+  if (!s) return { debug: 0 };
+  const u = new URL(s.includes('://') ? s : 'https://' + s);
+  const secure = u.protocol === 'https:';
+  return { debug: 0, host: u.hostname, port: Number(u.port) || (secure ? 443 : 80), path: u.pathname || '/', secure };
+}
+
 export class Net {
   constructor() {
     this.peer = null;
@@ -31,7 +40,7 @@ export class Net {
       let tries = 0;
       const attempt = () => {
         const code = randomCode();
-        const peer = new window.Peer(PREFIX + code, { debug: 0 });
+        const peer = new window.Peer(PREFIX + code, peerOpts());
         let opened = false;
         const timer = setTimeout(() => { if (!opened) { peer.destroy(); reject(new Error('No hay respuesta del servidor de salas. Revisá tu conexión a internet.')); } }, 12000);
         peer.on('open', () => {
@@ -66,7 +75,7 @@ export class Net {
     return new Promise((resolve, reject) => {
       if (!peerAvailable()) return reject(new Error('No se pudo cargar PeerJS.'));
       code = code.trim().toUpperCase();
-      const peer = new window.Peer({ debug: 0 });
+      const peer = new window.Peer(peerOpts());
       let done = false;
       const timer = setTimeout(() => { if (!done) { peer.destroy(); reject(new Error('No se encontró la sala. Revisá el código y que el dueño siga conectado.')); } }, 15000);
       peer.on('open', (id) => {

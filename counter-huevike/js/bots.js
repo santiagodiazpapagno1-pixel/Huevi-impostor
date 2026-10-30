@@ -61,8 +61,12 @@ export class BotBrain {
     }
     if (egg.state === 'loose') {
       const r = rankTo(egg.pos);
-      if (r < 2 || p.pos.distanceTo(egg.pos) < 12) return set(egg.pos, 'egg');
-      if (role === 'atk') return set(tmpA.set(enemyBase.x * 0.45, 0, laneZ), 'push');
+      if (role === 'atk') {
+        if (r < 3 || p.pos.distanceTo(egg.pos) < 12) return set(egg.pos, 'egg');
+        return set(tmpA.copy(egg.pos).lerp(enemyBase, 0.4).setZ(laneZ), 'push');
+      }
+      // Defensores: disputan la zona del huevo y cuidan la base, sin cargarlo.
+      if (r < 3) return set(tmpA.copy(egg.pos).lerp(myBase, 0.25).add(tmpB.set(0, 0, laneZ * 0.3)), 'contest');
       return set(tmpA.set(myBase.x * 0.7, myBase.y, laneZ * 0.6), 'defend');
     }
     if (egg.state === 'carried') {
@@ -248,7 +252,7 @@ export class BotBrain {
 
     // Acciones del huevo.
     const egg = g.egg;
-    if (egg.state === 'loose' && p.pos.distanceTo(egg.pos) < RULES.pickupRadius) out.interact = true;
+    if (egg.state === 'loose' && g.roleOf(p.team) === 'atk' && p.pos.distanceTo(egg.pos) < RULES.pickupRadius) out.interact = true;
     if (egg.state === 'carried' && egg.carrier === p.id && g.roleOf(p.team) === 'atk' && g.inPlantZone(p)) out.plant = true;
     if (egg.state === 'planted' && g.roleOf(p.team) === 'def' && p.pos.distanceTo(egg.pos) < RULES.defuseRadius - 0.3) {
       const danger = target && target.pos.distanceTo(p.pos) < 10 && egg.timer > 12;
