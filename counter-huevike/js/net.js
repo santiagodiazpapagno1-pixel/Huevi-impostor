@@ -111,6 +111,7 @@ export class Net {
   kick(id) { const c = this.conns.get(id); if (c) { c.send({ t: 'kick' }); setTimeout(() => c.close(), 200); } }
 
   close() {
+    this.handlers = {}; // salir a propósito no debe disparar avisos de "se perdió la conexión"
     try { for (const c of this.conns.values()) c.close(); this.host?.close(); this.peer?.destroy(); } catch { /* nada */ }
     this.conns.clear(); this.host = null; this.peer = null; this.isHost = false;
   }
