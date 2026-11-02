@@ -218,6 +218,7 @@ select{height:38px;border-radius:10px;border:3px solid var(--ink);background:#12
 /* modales */
 #tmodal,#pop,#bigmap{position:absolute;inset:0;background:rgba(10,6,14,.72);display:none;align-items:center;justify-content:center;pointer-events:auto}
 #tmodal.on,#pop.on,#bigmap.on{display:flex}
+#pop{z-index:25}
 .tbox{position:relative;background:var(--slate2);border:4px solid var(--ink);box-shadow:inset 0 0 0 3px #3A454B;border-radius:18px;padding:10px;display:flex;flex-direction:column;gap:6px;align-items:center}
 #tTitle{font-family:var(--ui);font-weight:600;letter-spacing:1px;text-transform:uppercase;font-size:22px}
 #tCanvas{width:min(88vw,calc(76vh*4/3),520px);aspect-ratio:4/3;border-radius:10px;touch-action:none}
@@ -340,6 +341,7 @@ label.ropt{padding-left:18px;font-size:12px;opacity:.85}label.ropt::before{conte
     <div class="tb-me"><canvas id="tbEgg" width="80" height="80" aria-hidden="true"></canvas><span class="online" aria-hidden="true"></span><span id="tbName">Sin apodo</span></div>
     <div class="tb-coins" title="Huevitos de oro"><canvas id="coinIco" width="56" height="56" aria-hidden="true"></canvas><span id="coinN">0</span><span class="tb-cl">huevitos de oro</span></div>
     <button class="btn ghost sm hide" id="tbFull">Pantalla completa</button>
+    <button class="btn ghost sm" id="tbCfg" aria-label="Ajustes">⚙</button>
     <button class="btn ghost sm" id="tbSound">Sonido</button>
   </div>
   <div class="menu-l">
@@ -569,10 +571,35 @@ const AU = {
         a.loop = true; a.setAttribute('playsinline', ''); a.volume = 0.01;
       } catch (e) { this.silent = null; }
     }
+    try { this.master(); } catch (e) { }
     if (this.silent && this.silent.paused) { try { const p = this.silent.play(); if (p && p.catch) p.catch(() => { }); } catch (e) { } }
   },
   ok() { return this.ctx && this.on && LOCAL.sfx > 0; },
-  out() { if (!this.sfxG) { this.sfxG = this.ctx.createGain(); this.sfxG.connect(this.ctx.destination); } this.sfxG.gain.value = LOCAL.sfx; return this.sfxG; },
+  /* salida maestra: directa, o en "modo compatible iPhone" pasa por un <audio> de medios */
+  master() {
+    const c = this.ctx;
+    if (!this.mst) { this.mst = c.createGain(); this.mst.connect(c.destination); this.mstMode = 'd'; }
+    const want = LOCAL.iosAudio && c.createMediaStreamDestination ? 'm' : 'd';
+    if (want !== this.mstMode) {
+      try { this.mst.disconnect(); } catch (e) { }
+      if (want === 'm') {
+        try {
+          if (!this.msd) { this.msd = c.createMediaStreamDestination(); this.mel = new Audio(); this.mel.setAttribute('playsinline', ''); this.mel.srcObject = this.msd.stream; }
+          this.mst.connect(this.msd); const p = this.mel.play(); if (p && p.catch) p.catch(() => { });
+        } catch (e) { this.mst.connect(c.destination); }
+      } else { this.mst.connect(c.destination); if (this.mel) this.mel.pause(); }
+      this.mstMode = want;
+    } else if (want === 'm' && this.mel && this.mel.paused) { const p = this.mel.play(); if (p && p.catch) p.catch(() => { }); }
+    return this.mst;
+  },
+  test() {
+    this.init(); if (!this.ctx) return 'Este navegador no tiene audio web';
+    const on = this.on; this.on = true; const fx = LOCAL.sfx; LOCAL.sfx = 1;
+    [523, 659, 784].forEach((f, i) => this.tone(f, 0.25, 'triangle', 0.3, i * 0.18));
+    this.on = on; LOCAL.sfx = fx;
+    return 'Estado del audio: ' + this.ctx.state + (navigator.audioSession ? ' · sesión: ' + navigator.audioSession.type : '');
+  },
+  out() { if (!this.sfxG) { this.sfxG = this.ctx.createGain(); this.sfxG.connect(this.master()); } this.sfxG.gain.value = LOCAL.sfx; return this.sfxG; },
   tone(f, d, type = 'sine', v = 0.15, delay = 0, slide = 0) {
     const c = this.ctx; if (!this.ok()) return;
     const t = c.currentTime + delay, o = c.createOscillator(), g = c.createGain();
@@ -712,7 +739,7 @@ const AU = {
 /* ---------- música y ambiente (todo con Web Audio, sin archivos) ---------- */
 const MUS = {
   g: null, next: 0, step: 0, mode: null, room: null, beatT: 0,
-  bus() { if (!AU.ctx) return null; if (!this.g) { this.g = AU.ctx.createGain(); this.g.connect(AU.ctx.destination); } this.g.gain.value = AU.on ? LOCAL.music * 0.5 : 0; return this.g; },
+  bus() { if (!AU.ctx) return null; if (!this.g) { this.g = AU.ctx.createGain(); this.g.connect(AU.master()); } this.g.gain.value = AU.on ? LOCAL.music * 0.5 : 0; return this.g; },
   note(f, d, type, v, at, cut) {
     const c = AU.ctx, o = c.createOscillator(), g = c.createGain(), fl = c.createBiquadFilter();
     o.type = type || 'triangle'; o.frequency.value = f; fl.type = 'lowpass'; fl.frequency.value = cut || 2400;
@@ -5442,10 +5469,13 @@ const UI = {
       <label for="lcCb">Modo daltónico</label><input type="checkbox" id="lcCb" ${LOCAL.cb ? 'checked' : ''}>
       <label for="lcNs">Sin temblor de pantalla</label><input type="checkbox" id="lcNs" ${LOCAL.noShake ? 'checked' : ''}>
       <label for="lcMu">Música</label><select id="lcMu">${vol('music')}</select>
-      <label for="lcFx">Efectos</label><select id="lcFx">${vol('sfx')}</select></div>
-      <button class="btn sm ghost" id="lcX">Listo</button>`;
-    const sv = () => { LOCAL.cb = $('#lcCb').checked; LOCAL.noShake = $('#lcNs').checked; LOCAL.music = +$('#lcMu').value; LOCAL.sfx = +$('#lcFx').value; saveLocal(); document.body.classList.toggle('noshake', LOCAL.noShake); this.meetKey = ''; this.hudKey = ''; AU.init(); };
-    ['#lcCb', '#lcNs', '#lcMu', '#lcFx'].forEach(id => $(id).onchange = sv);
+      <label for="lcFx">Efectos</label><select id="lcFx">${vol('sfx')}</select>
+      <label for="lcIo">Modo compatible iPhone</label><input type="checkbox" id="lcIo" ${LOCAL.iosAudio ? 'checked' : ''}></div>
+      <div class="small">Si no se oye nada, prendé el "Modo compatible iPhone" y tocá "Probar sonido".</div>
+      <div class="row"><button class="btn sm cel" id="lcTest">Probar sonido</button><button class="btn sm ghost" id="lcX">Listo</button></div><div class="small" id="lcSt"></div>`;
+    const sv = () => { LOCAL.cb = $('#lcCb').checked; LOCAL.noShake = $('#lcNs').checked; LOCAL.music = +$('#lcMu').value; LOCAL.sfx = +$('#lcFx').value; LOCAL.iosAudio = $('#lcIo').checked; saveLocal(); document.body.classList.toggle('noshake', LOCAL.noShake); this.meetKey = ''; this.hudKey = ''; AU.init(); };
+    ['#lcCb', '#lcNs', '#lcMu', '#lcFx', '#lcIo'].forEach(id => $(id).onchange = sv);
+    $('#lcTest').onclick = () => { $('#lcSt').textContent = AU.test() + (AU.on ? '' : ' · (el sonido del juego está apagado: tocá "Sonido")'); };
     $('#lcX').onclick = () => this.closePopup();
     $('#pop').classList.add('on'); this.popupOpen = true;
   },
@@ -6272,7 +6302,7 @@ function bindUI() {
   $('#aRep').onclick = () => V.report();
   $('#aSab').onclick = () => V.sabMenu();
   $('#aRole').onclick = () => V.useRole();
-  $('#hCfg').onclick = $('#lCfg').onclick = () => { AU.play('click'); UI.localSettings(); };
+  $('#tbCfg').onclick = $('#hCfg').onclick = $('#lCfg').onclick = () => { AU.play('click'); UI.localSettings(); };
   document.body.classList.toggle('noshake', LOCAL.noShake);
   $('#hInfo').onclick = $('#mInfo').onclick = () => { AU.play('click'); UI.matchInfo(); };
   $('#aHaunt').onclick = () => UI.hauntStep(0);
