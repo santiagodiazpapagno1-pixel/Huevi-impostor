@@ -1,0 +1,6 @@
+{
+  // Cloudflare Workers: publica la carpeta como sitio estático (sin build)
+  "name": "huevi-impostor",
+  "compatibility_date": "2025-10-01",
+  "assets": { "directory": "./" }
+}
