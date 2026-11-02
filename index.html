@@ -331,6 +331,43 @@ select{height:38px;border-radius:10px;border:3px solid var(--ink);background:#12
 label.ropt{padding-left:18px;font-size:12px;opacity:.85}label.ropt::before{content:'↳ '}
 .ropts{font-size:12px;opacity:.85;margin:2px 0 4px}
 .rdot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;border:1.5px solid #000;vertical-align:middle}
+/* ---- reunión: la grilla de jugadores scrollea sola; "Saltear voto" y la confirmación quedan siempre a la vista ---- */
+.m-left{overflow:hidden}
+.m-left>#mGrid{flex:1 1 auto;min-height:0;overflow:auto;align-content:start;padding:4px 4px 2px}
+.m-left>#mConfirm,.m-left>.row{flex:none}
+.mcard .nm>span:first-child{overflow-wrap:break-word;line-height:1.1}
+/* ---- reunión en celu horizontal: todo entra en pantalla y los nombres se leen ---- */
+@media (orientation:landscape) and (max-height:520px){
+  #scr-meet{gap:4px;padding:4px max(10px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+  .m-head{flex-wrap:nowrap;gap:8px;min-width:0}
+  .m-head .title{font-size:19px;white-space:nowrap;flex:none}
+  #mSub{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+  .m-head .pill{font-size:14px;padding:2px 10px;border-width:2px;white-space:nowrap;flex:none}
+  .m-head .btn.sm{min-height:32px;padding:2px 10px;font-size:13px;flex:none}
+  .mdead{font-size:12px}
+  .m-body{gap:8px}
+  .m-chat{width:min(270px,28vw);border-radius:12px}
+  .mc-h{padding:3px 10px;font-size:13px}
+  #mChat{font-size:13px}
+  .m-chat .chatf{padding:4px;gap:4px}.m-chat .chatf input{height:34px;font-size:14px;min-width:0}.m-chat .chatf .btn.sm{min-height:34px;padding:2px 8px;font-size:13px}
+  .m-left{gap:4px}
+  #mConfirm .small{font-size:12px}
+  .mgrid,.mgrid.many{grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:6px}
+  .mcard,.mgrid.many .mcard{min-height:44px;gap:6px;padding:3px 6px;font-size:14px;border-radius:11px}
+  .mcard canvas,.mgrid.many .mcard canvas{width:36px;height:36px}
+  .mcard .st{font-size:11px}
+  .mcard.newdead::after{left:8px;font-size:30px}
+  .mega{font-size:12px;margin-right:2px}
+  .vdots{max-width:36px}.vdots i{width:9px;height:9px}
+  .vsticker{top:-5px;right:4px;font-size:9px;padding:0 4px;border-width:1.5px}
+  .m-left .row{gap:8px}.m-left .row .btn{min-height:36px;font-size:14px;padding:2px 12px}
+  .confirm{padding:3px 8px;gap:6px;font-size:14px}.confirm .btn.sm{min-height:32px}
+}
+/* pocos jugadores en pantallas anchas: 2 columnas y tarjetas más grandes */
+@media (orientation:landscape) and (max-height:520px) and (min-width:600px){
+  .mgrid.few{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mgrid.few .mcard{min-height:52px;font-size:17px}.mgrid.few .mcard canvas{width:44px;height:44px}
+}
 </style>
 <canvas id="game"></canvas>
 <div id="ui">
@@ -6047,7 +6084,7 @@ const UI = {
       const red = V.role === 'imp' && (V.mates.includes(p.id) || p.id === V.pid) && p.id !== m.c, nd = (m.nd || []).includes(p.id);
       return `<button class="mcard ${dead ? 'dead' : ''} ${nd ? 'newdead' : ''} ${this.meetSel === p.id ? 'sel' : ''}" data-id="${p.id}" ${dead || !canVote ? 'aria-disabled="true"' : ''}><canvas width="108" height="108"></canvas><span class="nm"><span${red ? ' style="color:#FF8A8A"' : ''}>${p.id === m.c ? '<b class="mega" title="Llamó a la reunión">📢</b>' : ''}${esc(p.name)}${LOCAL.cb ? ` <small class="cbn">(${esc(colorName(p.look.color))})</small>` : ''}</span><span class="st">${st.join(' · ')}</span></span><span class="vdots">${dots}</span>${voted ? '<span class="vsticker">VOTÓ</span>' : ''}</button>`;
     }).join('');
-    $('#mGrid').classList.toggle('many', ps.length > 10);
+    $('#mGrid').classList.toggle('many', ps.length > 10); $('#mGrid').classList.toggle('few', ps.length <= 6);
     $('#mSkipDots').innerHTML = votesFor('skip').map(v => `<i style="background:${V.disp[v] ? colorHex(V.disp[v].look.color) : '#999'}"></i>`).join('');
     $('#mGrid').querySelectorAll('.mcard').forEach(b => {
       const p = V.disp[b.dataset.id], c = b.querySelector('canvas').getContext('2d'); c.scale(2, 2);
