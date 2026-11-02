@@ -173,7 +173,7 @@ function setupMenus() {
   $('createRoom').onclick = createRoom;
   $('joinRoom').onclick = joinRoom;
   $('joinCode').addEventListener('keydown', (e) => { if (e.key === 'Enter') joinRoom(); });
-  $('leaveLobby').onclick = leaveOnline;
+  $('leaveLobby').onclick = () => leaveOnline();
   $('copyCode').onclick = () => { navigator.clipboard?.writeText(lobby?.code || '').then(() => toastLobby('Código copiado')).catch(() => toastLobby(lobby?.code || '')); };
   $('shareCode').onclick = () => {
     const text = `¡Sumate a mi sala de Counter Huevike! Código: ${lobby?.code}`;
@@ -455,10 +455,10 @@ function renderLobby() {
     const ps = lobby.players.filter((p) => (lobby.mode === 'coop' ? team === 'A' : p.team === team));
     let html = ps.map((p) => `<li class="${p.id === me ? 'me' : ''}"><span>${esc(p.name)}</span><span class="tag">${p.host ? '👑 dueño' : ''}</span></li>`).join('');
     const empty = lobby.size - ps.length;
-    for (let i = 0; i < empty; i++) html += `<li class="empty">🤖 lugar libre (IA)</li>`;
+    if (empty > 0) html += `<li class="empty">🤖 ${empty} ${empty === 1 ? 'lugar libre' : 'lugares libres'} (IA)</li>`;
     ul.innerHTML = html;
   };
-  if (lobby.mode === 'coop') { list('A', 'AMIGOS'); $('teamB').dataset.title = 'IA RIVAL'; $('teamB').innerHTML = Array.from({ length: lobby.size }, () => '<li class="empty">🤖 IA</li>').join(''); }
+  if (lobby.mode === 'coop') { list('A', 'AMIGOS'); $('teamB').dataset.title = 'IA RIVAL'; $('teamB').innerHTML = `<li class="empty">🤖 ${lobby.size} bots de la IA</li>`; }
   else { list('A', 'EQUIPO 1'); list('B', 'EQUIPO 2'); }
   $('lobbyCount').textContent = `(${lobby.players.length}/${capacity()} personas)`;
   $('shuffleTeams').hidden = !(host && lobby.mode === 'privada');
@@ -472,7 +472,7 @@ function renderLobbyStatus() {
   if (lobby.host) {
     const full = n >= cap;
     $('startMatch').textContent = full ? 'INICIAR PARTIDA' : 'INICIAR PARTIDA (la IA completa)';
-    $('lobbyStatus').textContent = full ? '✔ Sala completa: ¡todo listo!' : `Esperando jugadores: ${n}/${cap}. Recomendado esperar a que se llene; si iniciás antes, los bots ocupan los lugares vacíos.`;
+    $('lobbyStatus').textContent = full ? '✔ Sala completa: ¡todo listo!' : `Esperando jugadores: ${n}/${cap}. Si iniciás antes, la IA completa los lugares vacíos.`;
   } else $('lobbyStatus').textContent = `Conectados ${n}/${cap}. Esperando que el dueño inicie la partida…`;
 }
 

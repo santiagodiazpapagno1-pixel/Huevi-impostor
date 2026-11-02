@@ -1,6 +1,6 @@
 // Service worker: guarda todo el juego para que funcione sin internet después de la primera carga.
 // Al cambiar cualquier archivo, subir la versión para que se descarguen los nuevos y se borren los viejos.
-const CACHE = 'counter-huevike-v1';
+const CACHE = 'counter-huevike-v2';
 const FILES = [
   './', 'index.html', 'style.css', 'manifest.webmanifest',
   'js/main.js', 'js/config.js', 'js/game.js', 'js/maps.js', 'js/physics.js', 'js/bots.js', 'js/models.js',
