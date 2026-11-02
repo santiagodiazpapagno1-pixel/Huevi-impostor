@@ -550,8 +550,26 @@ const colorName = id => (COLORS.find(c => c[0] === id) || ['', id])[1];
 const AU = {
   ctx: null, on: store.get('hi_sound', true), nbuf: null, budget: 12,
   init() {
+    // iPhone (iOS 17+): que suene como reproducción de medios y no lo corte el modo silencio
+    try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (e) { }
     if (!this.ctx) { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { this.ctx = null; } }
-    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+    if (!this.ctx) return;
+    // en iOS el contexto puede quedar 'suspended' o 'interrupted': hay que reanudarlo en cada toque
+    if (this.ctx.state !== 'running') { try { const p = this.ctx.resume(); if (p && p.catch) p.catch(() => { }); } catch (e) { } }
+    if (!this.unlocked) {
+      this.unlocked = true;
+      // buffer vacío: desbloquea Web Audio en Safari/Chrome de iPhone
+      try { const b = this.ctx.createBuffer(1, 1, 22050), s = this.ctx.createBufferSource(); s.buffer = b; s.connect(this.ctx.destination); s.start(0); } catch (e) { }
+      // <audio> silencioso en loop: hace que iOS use el canal de medios (suena aunque esté en silencio)
+      try {
+        const n = 800, sr = 8000, u = new Uint8Array(44 + n), dv = new DataView(u.buffer), w = (o, s) => { for (let i = 0; i < s.length; i++) u[o + i] = s.charCodeAt(i); };
+        w(0, 'RIFF'); dv.setUint32(4, 36 + n, true); w(8, 'WAVEfmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+        dv.setUint32(24, sr, true); dv.setUint32(28, sr, true); dv.setUint16(32, 1, true); dv.setUint16(34, 8, true); w(36, 'data'); dv.setUint32(40, n, true); u.fill(128, 44);
+        const a = this.silent = new Audio(URL.createObjectURL(new Blob([u], { type: 'audio/wav' })));
+        a.loop = true; a.setAttribute('playsinline', ''); a.volume = 0.01;
+      } catch (e) { this.silent = null; }
+    }
+    if (this.silent && this.silent.paused) { try { const p = this.silent.play(); if (p && p.catch) p.catch(() => { }); } catch (e) { } }
   },
   ok() { return this.ctx && this.on && LOCAL.sfx > 0; },
   out() { if (!this.sfxG) { this.sfxG = this.ctx.createGain(); this.sfxG.connect(this.ctx.destination); } this.sfxG.gain.value = LOCAL.sfx; return this.sfxG; },
@@ -6268,7 +6286,9 @@ function bindUI() {
   $('#hExit').onclick = () => UI.popup('¿Salir de la partida?', [{ label: 'Sí, salir al menú', fn: () => V.leave() }]);
   $('#endExit').onclick = () => V.leave();
   $('#pop').addEventListener('click', e => { if (e.target.id === 'pop') UI.closePopup(); });
-  ['pointerdown', 'keydown'].forEach(ev => addEventListener(ev, () => AU.init(), { once: true }));
+  // en iPhone el audio se desbloquea con un toque: reintentamos en cada toque (es barato)
+  ['pointerdown', 'touchend', 'click', 'keydown'].forEach(ev => addEventListener(ev, () => AU.init(), { capture: true, passive: true }));
+  document.addEventListener('visibilitychange', () => { if (document.hidden && AU.silent) { try { AU.silent.pause(); } catch (e) { } } });
 }
 function main() {
   resize(); addEventListener('resize', resize);
