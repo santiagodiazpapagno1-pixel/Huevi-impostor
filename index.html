@@ -1,10 +1,11 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Huevi Impostor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Oswald:wght@500;600&family=VT323&family=Permanent+Marker&display=swap">
 <style>
 :root{color-scheme:dark;--ink:#0E1215;--edge:#0E1215;--crema:#F6E7C8;--cream:#EFE6D2;--slate:#2A3439;--slate2:#1E262A;--teal:#3E9C8F;--oro:#F2B83B;--oro2:#D9A93A;--celeste:#74ACDF;--rojo:#C8202E;--verde:#4FA65B;--panel:rgba(30,38,42,.95);--sans:"Trebuchet MS","Segoe UI",system-ui,sans-serif;--serif:Georgia,"Times New Roman",serif;--ui:"Oswald","Arial Narrow","Roboto Condensed",Impact,sans-serif;--disp:"Luckiest Guy","Arial Black",Impact,sans-serif}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#game{touch-action:none}
 html,body{margin:0;height:100%;overflow:hidden;background:#15101C;color:var(--crema);font-family:var(--sans);touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
 input{user-select:text;-webkit-user-select:text;touch-action:auto}
 #game{position:fixed;inset:0;width:100%;height:100%;display:block}
@@ -132,7 +133,7 @@ select{height:38px;border-radius:10px;border:3px solid var(--ink);background:#12
 .chatlog{flex:1;min-height:70px;max-height:160px;overflow:auto;background:rgba(0,0,0,.25);border-radius:10px;padding:6px 8px;font-size:14px;display:flex;flex-direction:column;gap:3px;user-select:text}
 .chatlog .g{opacity:.75;font-style:italic}
 .chatf{display:flex;gap:6px}
-.chatf input{height:40px;font-size:15px}
+.chatf input{height:40px;font-size:16px}
 /* HUD */
 #scr-hud{pointer-events:none}
 #scr-hud>*{pointer-events:auto}
@@ -349,7 +350,7 @@ label.ropt{padding-left:18px;font-size:12px;opacity:.85}label.ropt::before{conte
   .m-chat{width:min(270px,28vw);border-radius:12px}
   .mc-h{padding:3px 10px;font-size:13px}
   #mChat{font-size:13px}
-  .m-chat .chatf{padding:4px;gap:4px}.m-chat .chatf input{height:34px;font-size:14px;min-width:0}.m-chat .chatf .btn.sm{min-height:34px;padding:2px 8px;font-size:13px}
+  .m-chat .chatf{padding:4px;gap:4px}.m-chat .chatf input{height:34px;font-size:16px;min-width:0}.m-chat .chatf .btn.sm{min-height:34px;padding:2px 8px;font-size:13px}
   .m-left{gap:4px}
   #mConfirm .small{font-size:12px}
   .mgrid,.mgrid.many{grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:6px}
@@ -5089,7 +5090,7 @@ const V = {
     }
     if (this.phase !== 'lobby' && this.phase !== 'play') { this.me.moving = false; return; }
     if (this.me.tp < 0) return;
-    const blocked = TaskUI.active || UI.popupOpen || UI.typing() || UI.bigOpen || UI.revealT > 0 || !!this.me.vent || !!this.haunt;
+    const blocked = TaskUI.active || UI.popupOpen || UI.typing() || (UI.bigOpen && !UI.sabOpen) || UI.revealT > 0 || !!this.me.vent || !!this.haunt;
     const v = blocked ? { x: 0, y: 0 } : Object.assign({}, Input.vec());
     const set = (this.lobby && this.lobby.set) || DEF_SET;
     const ghost = !this.me.alive && this.phase === 'play';
@@ -5590,7 +5591,7 @@ const UI = {
     const add = (cls, icon, label, x, y, fn, data) => {
       const b = document.createElement('button'); b.className = 'sbtn ' + cls; [b.style.left, b.style.top] = pos(x, y);
       b.innerHTML = `<span class="ic">${icon}</span><span class="lb">${label}</span>`; Object.assign(b.dataset, data || {});
-      b.onclick = e => { e.stopPropagation(); if (b.disabled) return; AU.play('click'); fn(); }; lay.appendChild(b);
+      b.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); if (b.disabled) return; AU.play('click'); fn(); }); lay.appendChild(b);
     };
     const go = (w, room) => () => { V.send({ t: 'act', a: 'sab', w, room }); if (w !== 'doors') this.closeBigMap(); };
     const cen = id => [ROOM[id].x + ROOM[id].w / 2, ROOM[id].y + ROOM[id].h / 2];
@@ -6334,19 +6335,24 @@ function bindUI() {
   $('#lChatF').addEventListener('submit', chatSend('#lChatI'));
   $('#mChatF').addEventListener('submit', chatSend('#mChatI'));
   $('#mSkip').onclick = () => { UI.meetSel = 'skip'; UI.meetKey = ''; UI.updateMeeting(); };
-  $('#aUse').onclick = () => V.use();
-  $('#aKill').onclick = () => V.kill();
-  $('#aRep').onclick = () => V.report();
-  $('#aSab').onclick = () => V.sabMenu();
-  $('#aRole').onclick = () => V.useRole();
+  // botones de acción: responden al apoyar el dedo (anda aunque el otro dedo esté en el joystick)
+  const tap = (el, fn) => {
+    el.addEventListener('pointerdown', e => { if (e.button > 0) return; e.preventDefault(); AU.init(); fn(); });
+    el.addEventListener('click', e => { if (e.detail === 0) fn(); });
+  };
+  tap($('#aUse'), () => V.use());
+  tap($('#aKill'), () => V.kill());
+  tap($('#aRep'), () => V.report());
+  tap($('#aSab'), () => V.sabMenu());
+  tap($('#aRole'), () => V.useRole());
   $('#tbCfg').onclick = $('#hCfg').onclick = $('#lCfg').onclick = () => { AU.play('click'); UI.localSettings(); };
   document.body.classList.toggle('noshake', LOCAL.noShake);
   $('#hInfo').onclick = $('#mInfo').onclick = () => { AU.play('click'); UI.matchInfo(); };
-  $('#aHaunt').onclick = () => UI.hauntStep(0);
+  tap($('#aHaunt'), () => UI.hauntStep(0));
   $('#hauntPrev').onclick = () => UI.hauntStep(-1); $('#hauntNext').onclick = () => UI.hauntStep(1); $('#hauntX').onclick = () => { V.haunt = null; };
   $('#hBook').onclick = $('#mBook').onclick = () => { AU.play('click'); TaskUI.open('libreta'); };
   $('#mini').onclick = () => UI.toggleBigMap();
-  $('#bigmap').onclick = () => UI.closeBigMap();
+  $('#bigmap').addEventListener('pointerdown', e => { if (e.target.closest('.sbtn')) return; UI.closeBigMap(); });
   $('#tlHead').onclick = () => $('#tList').classList.toggle('closed');
   $('#hSound').onclick = () => { AU.on = !AU.on; store.set('hi_sound', AU.on); $('#hSound').textContent = AU.on ? 'Sonido' : 'Sin sonido'; };
   $('#hSound').textContent = AU.on ? 'Sonido' : 'Sin sonido';
@@ -6358,6 +6364,7 @@ function bindUI() {
   document.addEventListener('visibilitychange', () => { if (document.hidden && AU.silent) { try { AU.silent.pause(); } catch (e) { } } });
 }
 function main() {
+  ['gesturestart', 'gesturechange'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive: false }));
   resize(); addEventListener('resize', resize);
   if (!ONLINE_OFF) loadPeer().catch(() => { });
   bindUI(); Input.bind(); TaskUI.bind(); UI.decoratePlaques(); MENU.bind();
