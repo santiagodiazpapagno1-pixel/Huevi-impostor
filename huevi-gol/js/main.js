@@ -903,6 +903,7 @@ function drawFx(dt) {
 }
 
 // ---------- Arranque ----------
+addEventListener('pagehide', () => { link?.close(); });
 resize();
 menuCamera();
 showScreen('menu');
