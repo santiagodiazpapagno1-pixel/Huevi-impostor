@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Huevi Gol</title>
+<meta name="description" content="Fútbol de jugadas: dibujá el pase y el tiro con el dedo. Duelo por turnos online con amigos.">
+<meta name="theme-color" content="#0b1324">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Huevi Gol">
+<link rel="stylesheet" href="style.css">
+<script src="../counter-huevike/vendor/peerjs.min.js" defer></script>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<canvas id="fx"></canvas>
+
+<!-- ============ HUD DEL PARTIDO ============ -->
+<div id="hud" class="hidden">
+  <div id="board">
+    <div class="side s0"><i class="kit"></i><span class="nm" id="n0">Vos</span><b id="s0">0</b></div>
+    <div class="mid" id="roundLbl">1</div>
+    <div class="side s1"><b id="s1">0</b><span class="nm" id="n1">Rival</span><i class="kit"></i></div>
+    <div class="dots" id="d0"></div><div></div><div class="dots right" id="d1"></div>
+  </div>
+  <button id="quit" class="icon" aria-label="Salir">✕</button>
+  <button id="soundBtn" class="icon" aria-label="Sonido">🔊</button>
+  <div id="clock"><i></i></div>
+  <div id="hint"></div>
+  <button id="goldBtn" class="hidden"><span class="egg"></span><span class="lbl">Huevo de Oro</span></button>
+</div>
+
+<div id="toast"><b></b><span></span></div>
+<div id="banner"><b></b><small></small></div>
+
+<!-- ============ PANEL DEL ARQUERO (cuando atajás) ============ -->
+<div id="keeper" class="hidden">
+  <h3>¡Atajás vos! Elegí adónde se tira tu arquero</h3>
+  <p>El rival no ve tu elección. Si adivinás el lado, la sacás.</p>
+  <div class="goal">
+    <button data-z="0">↖</button><button data-z="1">↑</button><button data-z="2">↗</button>
+    <button data-z="3">↙</button><button data-z="4">↓</button><button data-z="5">↘</button>
+  </div>
+  <div class="ktimer"><i></i></div>
+</div>
+
+<!-- ============ MENÚ ============ -->
+<section id="menu" class="screen">
+  <div class="wrap">
+    <div class="logo"><span>HUEVI</span><b>GOL</b></div>
+    <p class="tag">Dibujá el pase. Dibujá el tiro. Ganale el duelo a tu amigo.</p>
+    <label class="field">Tu nombre<input id="name" maxlength="12" autocomplete="off" spellcheck="false" placeholder="Jugador"></label>
+    <button class="big primary" data-act="online">Duelo online con amigos</button>
+    <button class="big" data-act="cpu">Duelo contra la compu</button>
+    <button class="big ghost" data-act="practice">Práctica libre</button>
+    <button class="link" data-act="howto">Cómo se juega</button>
+  </div>
+</section>
+
+<section id="online" class="screen hidden">
+  <div class="wrap">
+    <button class="back" data-act="menu">‹ Volver</button>
+    <h2>Duelo online</h2>
+    <p class="sub">5 jugadas cada uno, por turnos. Cuando pateás vos, tu amigo maneja al arquero, y al revés.</p>
+    <button class="big primary" data-act="host">Crear sala</button>
+    <div class="or">o unite con un código</div>
+    <div class="join">
+      <input id="code" maxlength="4" autocomplete="off" spellcheck="false" placeholder="CÓDIGO">
+      <button class="big" data-act="join">Unirme</button>
+    </div>
+    <p class="status" id="onlineStatus"></p>
+  </div>
+</section>
+
+<section id="lobby" class="screen hidden">
+  <div class="wrap">
+    <button class="back" data-act="leave">‹ Cerrar sala</button>
+    <h2>Tu sala</h2>
+    <p class="sub">Pasale este código a tu amigo:</p>
+    <div class="bigcode" id="roomCode">----</div>
+    <button class="big" data-act="share">Compartir link</button>
+    <p class="status pulse">Esperando a tu rival…</p>
+  </div>
+</section>
+
+<section id="howto" class="screen hidden">
+  <div class="wrap left">
+    <button class="back" data-act="menu">‹ Volver</button>
+    <h2>Cómo se juega</h2>
+    <ul>
+      <li><b>Patear:</b> deslizá el dedo hacia el arco. La pelota va adonde lo soltás.</li>
+      <li><b>Efecto:</b> curvá el trazo y la pelota dobla para el mismo lado. Sirve para pasar la barrera.</li>
+      <li><b>Fuerza:</b> rápido = tiro fuerte y bajo (más difícil de atajar, pero menos preciso). Lento = bombeado.</li>
+      <li><b>Pasar:</b> terminá el trazo sobre un compañero (aro celeste). Trazo lento = pase al piso; rápido = pase por arriba.</li>
+      <li><b>Atajar (duelo):</b> cuando patea tu rival, vos elegís en secreto adónde se tira tu arquero.</li>
+      <li><b>Huevo de Oro:</b> una vez por partido, un tiro sin error que al arquero le cuesta más.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="end" class="screen hidden">
+  <div class="wrap">
+    <h2 id="endTitle">¡Ganaste!</h2>
+    <div class="final"><span id="endN0">Vos</span><b id="endScore">3 - 2</b><span id="endN1">Rival</span></div>
+    <p class="status" id="endStatus"></p>
+    <button class="big primary" data-act="rematch">Revancha</button>
+    <button class="big ghost" data-act="exit">Menú</button>
+  </div>
+</section>
+
+<div id="msg" class="hidden"><div><p></p><button class="big primary">OK</button></div></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
